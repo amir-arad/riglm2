@@ -56,7 +56,7 @@ flowchart LR
     Proxy --- STORE[Context Store\nPer-session state]
 ```
 
-## Tech Stack (Planned)
+## Tech Stack
 
 - TypeScript / Bun
 - MCP SDK for protocol handling
@@ -65,4 +65,39 @@ flowchart LR
 
 ## Commands
 
-No build commands yet. Project is in design phase.
+```bash
+# Development
+bun install                    # Install dependencies
+bun run dev                    # Dev server with hot reload
+bun test                       # Run all tests
+bun run start                  # Run from source
+
+# Quality checks
+bun run typecheck              # TypeScript type checking
+bun run lint                   # ESLint (includes no-comments rule)
+bun run format                 # Prettier formatting
+bun run deadcode               # Find unused exports (knip)
+bun run circular               # Check for circular dependencies
+
+# Production
+bun run build                  # Build to dist/
+```
+
+## Coding Standards
+
+- **No comments** — enforced by ESLint. Only `WHY:`, `TODO`, `@ts-`, `eslint` prefixes allowed
+- **No `any`** — use `unknown` and narrow with Zod
+- **Named exports only** — no `default export`
+- **Zod validation** — all external data validated with Zod schemas
+- **No dead code** — enforced by knip (`bun run deadcode`)
+- **No circular deps** — enforced by madge (`bun run circular`)
+- **Strict TypeScript** — `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`
+- **Logging** — all to stderr via `log.ts`; stdout reserved for MCP protocol
+
+## Skills
+
+Project includes skills in `.claude/skills/`:
+- `writing-plans` — structured implementation plan authoring
+- `executing-plans` — batch execution with review checkpoints
+- `using-superpowers` — skill discovery and enforcement
+- `mcp-testing` — MCP server testing patterns (unit, integration, e2e)

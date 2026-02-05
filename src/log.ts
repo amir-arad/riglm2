@@ -1,4 +1,4 @@
-/** All logging goes to stderr — stdout is reserved for MCP protocol. */
+// WHY: stderr-only — stdout is reserved for MCP protocol
 export const log = {
   info: (...args: unknown[]) =>
     console.error("[riglm2]", ...args),

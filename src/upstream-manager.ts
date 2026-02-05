@@ -1,7 +1,8 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type { ServerConfig } from "./config.js";
-import type { UpstreamConnection, UpstreamTool } from "./types.js";
+import { UpstreamToolSchema } from "./types.js";
+import type { UpstreamConnection } from "./types.js";
 import { log } from "./log.js";
 
 export class UpstreamManager {
@@ -31,7 +32,11 @@ export class UpstreamManager {
     const transport = new StdioClientTransport({
       command: server.command,
       args: server.args,
-      env: { ...process.env, ...server.env } as Record<string, string>,
+      env: Object.fromEntries(
+        Object.entries({ ...process.env, ...server.env }).filter(
+          (pair): pair is [string, string] => pair[1] !== undefined
+        )
+      ),
       cwd: server.cwd,
       stderr: "inherit",
     });
@@ -51,7 +56,7 @@ export class UpstreamManager {
     this.connections.set(server.name, {
       name: server.name,
       client,
-      tools: tools as UpstreamTool[],
+      tools: UpstreamToolSchema.array().parse(tools),
     });
   }
 

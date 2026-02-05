@@ -1,50 +1,45 @@
+import { z } from "zod";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
-/** Raw tool definition as returned by an upstream MCP server. */
-export interface UpstreamTool {
-  name: string;
-  description?: string;
-  inputSchema: {
-    type: "object";
-    properties?: Record<string, object>;
-    required?: string[];
-    [key: string]: unknown;
-  };
-  outputSchema?: {
-    type: "object";
-    properties?: Record<string, object>;
-    required?: string[];
-    [key: string]: unknown;
-  };
-  annotations?: {
-    title?: string;
-    readOnlyHint?: boolean;
-    destructiveHint?: boolean;
-    idempotentHint?: boolean;
-    openWorldHint?: boolean;
-  };
-}
+const JsonSchemaObjectSchema = z
+  .object({
+    type: z.literal("object"),
+    properties: z.record(z.record(z.unknown())).optional(),
+    required: z.array(z.string()).optional(),
+  })
+  .passthrough();
 
-/** A connected upstream MCP server. */
+export const UpstreamToolSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  inputSchema: JsonSchemaObjectSchema,
+  outputSchema: JsonSchemaObjectSchema.optional(),
+  annotations: z
+    .object({
+      title: z.string().optional(),
+      readOnlyHint: z.boolean().optional(),
+      destructiveHint: z.boolean().optional(),
+      idempotentHint: z.boolean().optional(),
+      openWorldHint: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+export type UpstreamTool = z.infer<typeof UpstreamToolSchema>;
+
 export interface UpstreamConnection {
   name: string;
   client: Client;
   tools: UpstreamTool[];
 }
 
-/** A tool in the aggregated registry with provenance info. */
 export interface ToolEntry {
-  /** Namespaced name exposed to the downstream client. */
   namespacedName: string;
-  /** Original tool name on the upstream server. */
   originalName: string;
-  /** Name of the upstream server this tool belongs to. */
   serverName: string;
-  /** Full tool definition with namespaced name and prefixed description. */
   definition: UpstreamTool;
 }
 
-/** Per-session context state. */
 export interface Session {
   id: string;
   context?: {

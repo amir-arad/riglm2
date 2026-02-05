@@ -40,7 +40,6 @@ export class ToolRegistry {
     return this.entries.get(namespacedName);
   }
 
-  /** Parse a namespaced tool name into [serverName, originalName]. */
   parseName(namespacedName: string): [string, string] | null {
     const idx = namespacedName.indexOf(this.separator);
     if (idx === -1) return null;
@@ -50,7 +49,6 @@ export class ToolRegistry {
     ];
   }
 
-  /** Substring search across tool names and descriptions. */
   search(query: string): ToolEntry[] {
     const q = query.toLowerCase();
     return Array.from(this.entries.values()).filter(

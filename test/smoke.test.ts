@@ -8,7 +8,13 @@ const configPath = path.join(import.meta.dirname, "smoke.config.json");
 let client: Client;
 let transport: StdioClientTransport;
 
-// Connect to riglm2 as an MCP client
+function firstText(
+  result: { content: Array<{ type: string; text?: string }> }
+): string | undefined {
+  const item = result.content[0];
+  return item?.type === "text" ? item.text : undefined;
+}
+
 async function setup() {
   transport = new StdioClientTransport({
     command: "bun",
@@ -28,25 +34,20 @@ describe("riglm2 proxy", () => {
     await setup();
     const { tools } = await client.listTools();
 
-    // Should have upstream tools (namespaced) + 2 meta-tools
     expect(tools.length).toBeGreaterThan(2);
 
-    // All upstream tools should be namespaced with "everything__"
     const upstreamTools = tools.filter((t) => t.name.startsWith("everything__"));
     expect(upstreamTools.length).toBeGreaterThan(0);
 
-    // Meta-tools should be present
     const metaNames = tools.map((t) => t.name);
     expect(metaNames).toContain("set_context");
     expect(metaNames).toContain("search_available_tools");
 
-    // Descriptions should have server prefix
     const firstUpstream = upstreamTools[0]!;
     expect(firstUpstream.description).toMatch(/^\[everything\]/);
   }, 30_000);
 
   test("routes tool call to upstream", async () => {
-    // The "everything" server has an "echo" tool
     const result = await client.callTool({
       name: "everything__echo",
       arguments: { message: "hello from riglm2" },
@@ -62,7 +63,7 @@ describe("riglm2 proxy", () => {
       arguments: { query: "I want to manage files", intent: "file-management" },
     });
 
-    const text = (result.content as Array<{ type: string; text: string }>)[0]?.text;
+    const text = firstText(result);
     expect(text).toContain("Context updated");
     expect(text).toContain("file-management");
   }, 15_000);
@@ -73,7 +74,7 @@ describe("riglm2 proxy", () => {
       arguments: { query: "echo" },
     });
 
-    const text = (result.content as Array<{ type: string; text: string }>)[0]?.text;
+    const text = firstText(result);
     expect(text).toContain("everything__echo");
   }, 15_000);
 
@@ -83,7 +84,7 @@ describe("riglm2 proxy", () => {
       arguments: {},
     });
 
-    const text = (result.content as Array<{ type: string; text: string }>)[0]?.text;
+    const text = firstText(result);
     expect(text).toContain("Unknown tool");
   }, 15_000);
 });

@@ -27,7 +27,6 @@ const ConfigSchema = z.object({
 });
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;
-export type ProxyConfig = z.infer<typeof ProxyConfigSchema>;
 export type Config = z.infer<typeof ConfigSchema>;
 
 export async function loadConfig(path: string): Promise<Config> {

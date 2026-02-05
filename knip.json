@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["!**/*.test.ts", "!**/*.spec.ts"],
+  "project": ["src/**/*.ts"],
+  "ignore": ["test/**"],
+  "ignoreExportsUsedInFile": true,
+  "eslint": {
+    "config": ["eslint.config.*"]
+  },
+  "bun": false
+}

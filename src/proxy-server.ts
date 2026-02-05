@@ -39,17 +39,15 @@ export function createProxyServer(
     const { name: toolName, arguments: args } = request.params;
     log.debug(`tools/call: ${toolName}`);
 
-    // Meta-tools handled locally
     if (isMetaTool(toolName)) {
       return handleMetaTool(
         toolName,
-        (args ?? {}) as Record<string, unknown>,
+        args ?? {},
         registry,
         sessionStore
       );
     }
 
-    // Route to upstream
     const entry = registry.getEntry(toolName);
     if (!entry) {
       return {
@@ -61,10 +59,9 @@ export function createProxyServer(
     const result = await upstream.callTool(
       entry.serverName,
       entry.originalName,
-      (args ?? {}) as Record<string, unknown>
+      args ?? {}
     );
 
-    // Record for Phase 2 analytics
     sessionStore.recordToolCall(DEFAULT_SESSION, toolName);
 
     return result;

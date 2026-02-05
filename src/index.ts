@@ -13,11 +13,9 @@ async function main() {
     process.exit(1);
   }
 
-  // Load config
   const config = await loadConfig(configPath);
   log.info(`Loaded config: ${config.servers.length} server(s)`);
 
-  // Connect to upstream servers
   const upstream = new UpstreamManager();
   const connections = await upstream.connectAll(config.servers);
 
@@ -26,12 +24,10 @@ async function main() {
     process.exit(1);
   }
 
-  // Build tool registry
   const registry = new ToolRegistry(config.proxy.namespace_separator);
   registry.buildFromConnections(connections);
   log.info(`Tool registry: ${registry.size} tools from ${connections.length} server(s)`);
 
-  // Initialize session store and proxy
   const sessionStore = new SessionStore();
   const server = createProxyServer(
     config.proxy.name,
@@ -40,12 +36,10 @@ async function main() {
     sessionStore
   );
 
-  // Start on stdio
   const transport = new StdioServerTransport();
   await server.connect(transport);
   log.info("riglm2 proxy running on stdio");
 
-  // Graceful shutdown
   const shutdown = async () => {
     log.info("Shutting down...");
     await upstream.disconnectAll();
