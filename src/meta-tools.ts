@@ -1,3 +1,4 @@
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import type { UpstreamTool } from "./types.js";
 import type { ToolRegistry } from "./tool-registry.js";
 import type { SessionStore } from "./session-store.js";
@@ -62,13 +63,14 @@ export function handleMetaTool(
   name: string,
   args: Record<string, unknown>,
   registry: ToolRegistry,
-  sessionStore: SessionStore
+  sessionStore: SessionStore,
+  server?: Server
 ): { content: Array<{ type: "text"; text: string }> } {
   switch (name) {
     case "set_context":
-      return handleSetContext(args, sessionStore);
+      return handleSetContext(args, sessionStore, server);
     case "search_available_tools":
-      return handleSearchTools(args, registry);
+      return handleSearchTools(args, registry, sessionStore);
     default:
       throw new Error(`Unknown meta-tool: ${name}`);
   }
@@ -76,13 +78,20 @@ export function handleMetaTool(
 
 function handleSetContext(
   args: Record<string, unknown>,
-  sessionStore: SessionStore
+  sessionStore: SessionStore,
+  server?: Server
 ) {
   const query = String(args.query ?? "");
   const intent = args.intent ? String(args.intent) : undefined;
 
   sessionStore.setContext(DEFAULT_SESSION, query, intent);
   log.debug(`Context set: "${query}"${intent ? ` (intent: ${intent})` : ""}`);
+
+  if (server) {
+    server
+      .sendToolListChanged()
+      .catch((err: unknown) => log.error("Failed to send tools/list_changed:", err));
+  }
 
   return {
     content: [
@@ -96,10 +105,14 @@ function handleSetContext(
 
 function handleSearchTools(
   args: Record<string, unknown>,
-  registry: ToolRegistry
+  registry: ToolRegistry,
+  sessionStore: SessionStore
 ) {
   const query = String(args.query ?? "");
   const results = registry.search(query);
+
+  const resultNames = results.map((e) => e.namespacedName);
+  sessionStore.setLastSearch(DEFAULT_SESSION, query, resultNames);
 
   if (results.length === 0) {
     return {

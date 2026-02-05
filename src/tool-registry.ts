@@ -36,6 +36,10 @@ export class ToolRegistry {
     return Array.from(this.entries.values()).map((e) => e.definition);
   }
 
+  getAllEntries(): ToolEntry[] {
+    return Array.from(this.entries.values());
+  }
+
   getEntry(namespacedName: string): ToolEntry | undefined {
     return this.entries.get(namespacedName);
   }

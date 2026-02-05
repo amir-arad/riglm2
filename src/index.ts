@@ -3,6 +3,8 @@ import { loadConfig } from "./config.js";
 import { UpstreamManager } from "./upstream-manager.js";
 import { ToolRegistry } from "./tool-registry.js";
 import { SessionStore } from "./session-store.js";
+import { FastEmbedEmbedder } from "./embedder.js";
+import { ToolRetriever } from "./tool-retriever.js";
 import { createProxyServer } from "./proxy-server.js";
 import { log } from "./log.js";
 
@@ -28,12 +30,17 @@ async function main() {
   registry.buildFromConnections(connections);
   log.info(`Tool registry: ${registry.size} tools from ${connections.length} server(s)`);
 
+  const embedder = new FastEmbedEmbedder();
+  const retriever = new ToolRetriever(embedder, registry);
+  await retriever.indexStaticTools();
+
   const sessionStore = new SessionStore();
   const server = createProxyServer(
     config.proxy.name,
     registry,
     upstream,
-    sessionStore
+    sessionStore,
+    retriever
   );
 
   const transport = new StdioServerTransport();

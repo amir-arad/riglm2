@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "fastembed": "^2.1.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
@@ -35,5 +36,10 @@
     "mcpmon": "^1.0.1",
     "prettier": "^3.8.0",
     "typescript": "^5.8.0"
-  }
+  },
+  "trustedDependencies": [
+    "onnxruntime-node",
+    "protobufjs",
+    "sharp"
+  ]
 }

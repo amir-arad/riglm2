@@ -52,4 +52,10 @@ export interface Session {
     timestamp: number;
     contextSnapshot?: string;
   }>;
+  retrievedTools?: string[];
+  lastSearch?: {
+    query: string;
+    results: string[];
+    timestamp: number;
+  };
 }

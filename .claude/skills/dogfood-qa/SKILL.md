@@ -1,12 +1,6 @@
 ---
 name: dogfood-qa
-description: |
-  QA agent for dogfooding riglm2's own MCP proxy. Use when: (1) Verifying riglm2 proxy is working
-  after changes, (2) Testing meta-tools (set_context, search_available_tools), (3) Exercising
-  upstream tool routing through the proxy, (4) Regression testing after refactors, (5) Validating
-  new features end-to-end through Claude Code's own MCP connection.
-related_skills:
-  - mcp-testing (programmatic tests)
+description: "QA agent for dogfooding riglm2's own MCP proxy. Use when: (1) Verifying riglm2 proxy is working after changes, (2) Testing meta-tools (set_context, search_available_tools), (3) Exercising upstream tool routing through the proxy, (4) Regression testing after refactors, (5) Validating semantic filtering and learning signals end-to-end through Claude Code's own MCP connection."
 ---
 
 # riglm2 Dogfood QA
@@ -40,7 +34,16 @@ Run these checks **in order**. Stop and report on first failure.
 - [ ] At least one `riglm2__everything__*` upstream tool exists
 - [ ] Tool descriptions include `[everything]` prefix for upstream tools
 
-### 2. Meta-tool: set_context
+### 2. Cold Start — All Tools Returned
+
+**Action**: Without calling `set_context` first, list tools from riglm2.
+
+**Verify**:
+
+- [ ] All 13 upstream `everything__*` tools are present (cold start mode — no context, so no filtering)
+- [ ] Both meta-tools present
+
+### 3. Meta-tool: set_context
 
 **Action**: Call `riglm2__set_context` with:
 
@@ -54,7 +57,19 @@ Run these checks **in order**. Stop and report on first failure.
 - [ ] Response echoes back the query text
 - [ ] Response includes intent "testing"
 
-### 3. Meta-tool: search_available_tools
+### 4. Filtering — tools/list After set_context
+
+**Action**: After test 3's `set_context`, list tools from riglm2 again.
+
+**Verify**:
+
+- [ ] `riglm2__set_context` still present (meta-tools always included)
+- [ ] `riglm2__search_available_tools` still present
+- [ ] **One of**: (a) tool count is less than full 15 (filtering active), OR (b) all tools still present (cold start — dynamic index empty, confidence < 0.3). Record which case.
+
+**Note**: On a fresh proxy with no learning history, confidence will be < 0.3, so all tools are returned. This is expected. After repeated usage, filtering will kick in.
+
+### 5. Meta-tool: search_available_tools
 
 **Action**: Call `riglm2__search_available_tools` with:
 
@@ -68,7 +83,7 @@ Run these checks **in order**. Stop and report on first failure.
 - [ ] `everything__echo` appears in results
 - [ ] Results include tool descriptions
 
-### 4. Search — No Results
+### 6. Search — No Results
 
 **Action**: Call `riglm2__search_available_tools` with:
 
@@ -80,7 +95,7 @@ Run these checks **in order**. Stop and report on first failure.
 
 - [ ] Response contains "No tools found"
 
-### 5. Upstream Tool Routing
+### 7. Upstream Tool Routing
 
 **Action**: Call `riglm2__everything__echo` with:
 
@@ -93,16 +108,31 @@ Run these checks **in order**. Stop and report on first failure.
 - [ ] Response is not an error
 - [ ] Response content array is non-empty
 
-### 6. Unknown Tool Error
+### 8. Learning Signal — Tool Call After Context
+
+**Action**: Ensure context is set (from test 3), then call `riglm2__everything__echo`:
+
+```json
+{ "message": "learning signal test" }
+```
+
+**Verify**:
+
+- [ ] Call succeeds (response is non-error)
+- [ ] No errors in proxy stderr about "Learning signal failed"
+
+**What this tests**: After `set_context` + `tools/call`, the proxy records a learning signal (query-tool pair) into the dynamic index. The signal type depends on whether the tool was in the filtered list (1.0) or discovered via search (1.5) or neither (0.5).
+
+### 9. Unknown Tool Error
 
 Claude Code may validate tool names client-side, so non-existent tools can't be called via MCP tool invocation.
-if this happens, use a raw JSON-RPC call via Bash instead:
+If this happens, use a raw JSON-RPC call via Bash instead:
 
 **Action**:
 
 First, call `riglm2__nonexistent__fake_tool` with `{}`
 
-If it fails or pervented client-side, run this Bash command:
+If it fails or prevented client-side, run this Bash command:
 
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"nonexistent__fake_tool","arguments":{}}}' | timeout 5 bun run src/index.ts dogfood.config.json 2>/dev/null | head -5
@@ -113,7 +143,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"nonexisten
 - [ ] Response JSON contains `"Unknown tool: nonexistent__fake_tool"`
 - [ ] Response JSON contains `"isError":true`
 
-### 7. Context Persistence (set then search)
+### 10. Context Persistence (set then search)
 
 **Action**: Call `riglm2__set_context` with:
 
@@ -132,6 +162,29 @@ Then call `riglm2__search_available_tools` with:
 - [ ] set_context succeeds
 - [ ] search returns results (everything\_\_echo or other matching tools)
 
+### 11. Repeated Context — Confidence Growth
+
+**Action**: Call `riglm2__set_context` with the same query used earlier:
+
+```json
+{ "query": "I need to test echo functionality" }
+```
+
+Then call `riglm2__everything__echo` with:
+
+```json
+{ "message": "confidence growth test" }
+```
+
+Then list tools again.
+
+**Verify**:
+
+- [ ] Both calls succeed
+- [ ] Tools list is returned (may or may not be filtered — depends on accumulated confidence)
+
+**What this tests**: Repeated context + tool usage builds dynamic index entries. Over multiple cycles, confidence for this query should increase, eventually crossing the 0.3 threshold and enabling filtering.
+
 ## Reporting
 
 After running all checks, produce a summary:
@@ -142,14 +195,19 @@ After running all checks, produce a summary:
 | # | Test | Status | Notes |
 |---|------|--------|-------|
 | 1 | Connection Health | PASS/FAIL | |
-| 2 | set_context | PASS/FAIL | |
-| 3 | search (hit) | PASS/FAIL | |
-| 4 | search (miss) | PASS/FAIL | |
-| 5 | upstream routing | PASS/FAIL | |
-| 6 | unknown tool error | PASS/FAIL | |
-| 7 | context persistence | PASS/FAIL | |
+| 2 | Cold Start | PASS/FAIL | |
+| 3 | set_context | PASS/FAIL | |
+| 4 | Filtering after context | PASS/FAIL | filtering active / cold start |
+| 5 | search (hit) | PASS/FAIL | |
+| 6 | search (miss) | PASS/FAIL | |
+| 7 | upstream routing | PASS/FAIL | |
+| 8 | learning signal | PASS/FAIL | |
+| 9 | unknown tool error | PASS/FAIL | |
+| 10 | context persistence | PASS/FAIL | |
+| 11 | confidence growth | PASS/FAIL | |
 
-**Overall**: X/7 passed
+**Overall**: X/11 passed
+**Filtering active**: yes/no (cold start expected on fresh proxy)
 ```
 
 ## When Something Fails
@@ -159,6 +217,8 @@ After running all checks, produce a summary:
 3. Confirm upstream server (`server-everything`) is installable: `npx -y @modelcontextprotocol/server-everything`
 4. Check `.mcp.json` has correct `cwd` path
 5. Re-run `bun install` if dependencies are stale
+6. If embedding model fails to load, check `fastembed` is installed: `bun add fastembed`
+7. Enable debug logging: `RIGLM2_DEBUG=1` in `.mcp.json` env
 
 ## Adding New Upstream Servers
 
@@ -185,4 +245,4 @@ To expand dogfood coverage, add servers to `dogfood.config.json`:
 }
 ```
 
-More upstream servers = more tools = better test of the "too many tools" problem that Phase 3 solves.
+More upstream servers = more tools = better test of semantic filtering. With 40+ tools across multiple servers, filtering becomes observable within a single session.

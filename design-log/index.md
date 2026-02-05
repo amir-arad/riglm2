@@ -21,6 +21,12 @@
 | 05 | [Learning Loop](05-learning-loop.md) | Observing tool calls, recording pairs, updating relevance |
 | 06 | [Cold Start & Recovery](06-cold-start.md) | Cold start paradox, `search_available_tools`, thresholds |
 
+## Implementation
+
+| # | Title | Description |
+|---|-------|-------------|
+| 08 | [Phase 3 Implementation](08-phase3-implementation.md) | Embedding choice (fastembed), two-tier retrieval, learning signals, cold start |
+
 ## Dogfooding
 
 | # | Title | Description |

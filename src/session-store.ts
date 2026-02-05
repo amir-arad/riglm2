@@ -34,6 +34,28 @@ export class SessionStore {
     });
   }
 
+  setRetrievedTools(sessionId: string, toolNames: string[]): void {
+    const session = this.getOrCreate(sessionId);
+    session.retrievedTools = toolNames;
+  }
+
+  getRetrievedTools(sessionId: string): string[] | undefined {
+    return this.sessions.get(sessionId)?.retrievedTools;
+  }
+
+  setLastSearch(
+    sessionId: string,
+    query: string,
+    results: string[]
+  ): void {
+    const session = this.getOrCreate(sessionId);
+    session.lastSearch = { query, results, timestamp: Date.now() };
+  }
+
+  getLastSearch(sessionId: string) {
+    return this.sessions.get(sessionId)?.lastSearch;
+  }
+
   getSession(sessionId: string): Session | undefined {
     return this.sessions.get(sessionId);
   }
