@@ -2,6 +2,7 @@ import type { Embedder } from "./embedder.js";
 import type { ToolRegistry } from "./tool-registry.js";
 import { InMemoryVectorIndex } from "./vector-index.js";
 import type { SearchResult } from "./vector-index.js";
+import type { Storage } from "./storage.js";
 import { log } from "./log.js";
 
 const STATIC_WEIGHT = 0.6;
@@ -15,10 +16,21 @@ export class ToolRetriever {
   private dynamicIndex = new InMemoryVectorIndex();
   private embedder: Embedder;
   private registry: ToolRegistry;
+  private storage?: Storage;
 
-  constructor(embedder: Embedder, registry: ToolRegistry) {
+  constructor(embedder: Embedder, registry: ToolRegistry, storage?: Storage) {
     this.embedder = embedder;
     this.registry = registry;
+    this.storage = storage;
+  }
+
+  loadDynamicEntries(): void {
+    if (!this.storage) return;
+    const entries = this.storage.loadAll();
+    if (entries.length === 0) return;
+    this.dynamicIndex.clear();
+    this.dynamicIndex.addBatch(entries);
+    log.info(`Loaded ${entries.length} dynamic entries from storage`);
   }
 
   async indexStaticTools(): Promise<void> {
@@ -70,20 +82,23 @@ export class ToolRetriever {
     if (existing) {
       const oldConfidence = existing.metadata.confidence ?? 0;
       existing.metadata.confidence = oldConfidence * 0.8 + signal * 0.2;
+      this.storage?.upsert(existing);
       return;
     }
 
     const queryVector = await this.embedder.embed(query);
-    this.dynamicIndex.add({
+    const newEntry = {
       id,
       vector: queryVector,
       toolName,
       metadata: {
-        type: "learned",
+        type: "learned" as const,
         confidence: signal,
         query,
       },
-    });
+    };
+    this.dynamicIndex.add(newEntry);
+    this.storage?.upsert(newEntry);
 
     log.debug(
       `Learned: "${query}" → ${toolName} (signal=${signal}, dynamic_size=${this.dynamicIndex.size})`

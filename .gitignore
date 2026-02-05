@@ -3,3 +3,5 @@ dist/
 bun.lock
 *.tsbuildinfo
 local_cache/
+riglm2-data.*
+riglm2-dogfood.*

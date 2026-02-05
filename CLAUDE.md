@@ -101,4 +101,4 @@ Project includes skills in `.claude/skills/`:
 - `executing-plans` — batch execution with review checkpoints
 - `using-superpowers` — skill discovery and enforcement
 - `mcp-testing` — MCP server testing patterns (unit, integration, e2e)
-- `dogfood-qa` — QA via Claude Code's own MCP connection to riglm2
+- `dogfood-qa` — QA via Claude Code's own MCP connection to riglm2 (also available as `/dogfood-qa` command)

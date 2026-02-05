@@ -1,6 +1,7 @@
 import { describe, test, expect, afterAll } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { unlinkSync } from "node:fs";
 import path from "node:path";
 
 const configPath = path.join(import.meta.dirname, "smoke.config.json");
@@ -25,8 +26,13 @@ async function setup() {
   await client.connect(transport);
 }
 
+const DB_PATH = "/tmp/riglm2-test-e2e.db";
+
 afterAll(async () => {
   await client?.close();
+  for (const suffix of ["", "-wal", "-shm"]) {
+    try { unlinkSync(DB_PATH + suffix); } catch { /* already cleaned */ }
+  }
 });
 
 describe("riglm2 proxy", () => {

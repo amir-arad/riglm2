@@ -21,12 +21,21 @@ const ProxyConfigSchema = z.object({
   namespace_separator: z.string().default("__"),
 });
 
+const StorageConfigSchema = z.object({
+  path: z.string().default("./riglm2-data.db"),
+  pruneThreshold: z.number().int().positive().default(5000),
+  pruneMinConfidence: z.number().min(0).max(1).default(0.1),
+  pruneUnusedDays: z.number().int().positive().default(30),
+});
+
 const ConfigSchema = z.object({
   servers: z.array(ServerConfigSchema).min(1, "At least one server required"),
   proxy: ProxyConfigSchema.default({}),
+  storage: StorageConfigSchema.default({}),
 });
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;
+export type StorageConfig = z.infer<typeof StorageConfigSchema>;
 export type Config = z.infer<typeof ConfigSchema>;
 
 export async function loadConfig(path: string): Promise<Config> {

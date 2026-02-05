@@ -1,3 +1,4 @@
+import path from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { loadConfig } from "./config.js";
 import { UpstreamManager } from "./upstream-manager.js";
@@ -5,6 +6,7 @@ import { ToolRegistry } from "./tool-registry.js";
 import { SessionStore } from "./session-store.js";
 import { FastEmbedEmbedder } from "./embedder.js";
 import { ToolRetriever } from "./tool-retriever.js";
+import { Storage } from "./storage.js";
 import { createProxyServer } from "./proxy-server.js";
 import { log } from "./log.js";
 
@@ -30,8 +32,12 @@ async function main() {
   registry.buildFromConnections(connections);
   log.info(`Tool registry: ${registry.size} tools from ${connections.length} server(s)`);
 
+  const storagePath = path.resolve(path.dirname(configPath), config.storage.path);
+  const storage = new Storage(storagePath);
+  storage.prune(config.storage);
   const embedder = new FastEmbedEmbedder();
-  const retriever = new ToolRetriever(embedder, registry);
+  const retriever = new ToolRetriever(embedder, registry, storage);
+  retriever.loadDynamicEntries();
   await retriever.indexStaticTools();
 
   const sessionStore = new SessionStore();
@@ -49,6 +55,8 @@ async function main() {
 
   const shutdown = async () => {
     log.info("Shutting down...");
+    storage.prune(config.storage);
+    storage.close();
     await upstream.disconnectAll();
     await server.close();
     process.exit(0);

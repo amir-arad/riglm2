@@ -7,5 +7,6 @@
   "eslint": {
     "config": ["eslint.config.*"]
   },
-  "bun": false
+  "bun": false,
+  "ignoreDependencies": ["mcpmon"]
 }

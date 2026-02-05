@@ -9,5 +9,8 @@
   "proxy": {
     "name": "riglm2-dogfood",
     "namespace_separator": "__"
+  },
+  "storage": {
+    "path": "./riglm2-dogfood.db"
   }
 }

@@ -1,6 +1,7 @@
 import { describe, test, expect, afterAll } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { unlinkSync } from "node:fs";
 import path from "node:path";
 
 const configPath = path.join(import.meta.dirname, "smoke.config.json");
@@ -25,8 +26,13 @@ async function setup() {
   await client.connect(transport);
 }
 
+const DB_PATH = "/tmp/riglm2-test-e2e.db";
+
 afterAll(async () => {
   await client?.close();
+  for (const suffix of ["", "-wal", "-shm"]) {
+    try { unlinkSync(DB_PATH + suffix); } catch { /* already cleaned */ }
+  }
 });
 
 describe("Phase 3: context-aware filtering", () => {
@@ -80,4 +86,37 @@ describe("Phase 3: context-aware filtering", () => {
 
     expect(result.content).toBeDefined();
   }, 30_000);
+
+  test("learned pairs persist across restart", async () => {
+    // WHY: learn a signal by setting context then calling a tool
+    await client.callTool({
+      name: "set_context",
+      arguments: { query: "I want to echo messages back and forth" },
+    });
+    await client.callTool({
+      name: "everything__echo",
+      arguments: { message: "persist me" },
+    });
+
+    await client.close();
+
+    // WHY: restart proxy with same DB to verify persistence
+    transport = new StdioClientTransport({
+      command: "bun",
+      args: ["run", path.join(import.meta.dirname, "../src/index.ts"), configPath],
+      stderr: "inherit",
+    });
+    client = new Client({ name: "test-client", version: "1.0.0" }, { capabilities: {} });
+    await client.connect(transport);
+
+    // WHY: set same context — if dynamic entries loaded, echo should rank in filtered list
+    await client.callTool({
+      name: "set_context",
+      arguments: { query: "I want to echo messages back and forth" },
+    });
+
+    const { tools } = await client.listTools();
+    const toolNames = tools.map((t) => t.name);
+    expect(toolNames).toContain("everything__echo");
+  }, 60_000);
 });

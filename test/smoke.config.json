@@ -9,5 +9,8 @@
   "proxy": {
     "name": "riglm2-test",
     "namespace_separator": "__"
+  },
+  "storage": {
+    "path": "/tmp/riglm2-test-e2e.db"
   }
 }
