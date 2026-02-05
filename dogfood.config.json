@@ -1,0 +1,13 @@
+{
+  "servers": [
+    {
+      "name": "everything",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-everything"]
+    }
+  ],
+  "proxy": {
+    "name": "riglm2-dogfood",
+    "namespace_separator": "__"
+  }
+}

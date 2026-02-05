@@ -20,3 +20,9 @@
 |---|-------|-------------|
 | 05 | [Learning Loop](05-learning-loop.md) | Observing tool calls, recording pairs, updating relevance |
 | 06 | [Cold Start & Recovery](06-cold-start.md) | Cold start paradox, `search_available_tools`, thresholds |
+
+## Dogfooding
+
+| # | Title | Description |
+|---|-------|-------------|
+| 07 | [Dogfood Setup](07-dogfood-setup.md) | Self-hosting riglm2 via Claude Code MCP, QA skill, 7/7 baseline |
