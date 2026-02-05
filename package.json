@@ -1,0 +1,23 @@
+{
+  "name": "riglm2",
+  "version": "0.1.0",
+  "description": "Adaptive tool selection proxy for MCP",
+  "type": "module",
+  "main": "src/index.ts",
+  "bin": {
+    "riglm2": "src/index.ts"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.8.0"
+  }
+}
