@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "riglm2": {
-      "command": "bun",
-      "args": ["run", "src/index.ts", "dogfood.config.json"],
+      "command": "npx",
+      "args": ["mcpmon", "bun", "run", "src/index.ts", "dogfood.config.json"],
       "cwd": "/data/Workspace/riglm2"
     }
   }

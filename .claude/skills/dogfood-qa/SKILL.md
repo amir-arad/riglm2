@@ -95,12 +95,23 @@ Run these checks **in order**. Stop and report on first failure.
 
 ### 6. Unknown Tool Error
 
-**Action**: Call `riglm2__nonexistent__fake_tool` with `{}`
+Claude Code may validate tool names client-side, so non-existent tools can't be called via MCP tool invocation.
+if this happens, use a raw JSON-RPC call via Bash instead:
+
+**Action**:
+
+First, call `riglm2__nonexistent__fake_tool` with `{}`
+
+If it fails or pervented client-side, run this Bash command:
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"nonexistent__fake_tool","arguments":{}}}' | timeout 5 bun run src/index.ts dogfood.config.json 2>/dev/null | head -5
+```
 
 **Verify**:
 
-- [ ] Response contains "Unknown tool"
-- [ ] Response is marked as error (`isError: true`)
+- [ ] Response JSON contains `"Unknown tool: nonexistent__fake_tool"`
+- [ ] Response JSON contains `"isError":true`
 
 ### 7. Context Persistence (set then search)
 

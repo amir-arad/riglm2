@@ -32,6 +32,7 @@
     "globals": "^17.0.0",
     "knip": "^5.82.0",
     "madge": "^8.0.0",
+    "mcpmon": "^1.0.1",
     "prettier": "^3.8.0",
     "typescript": "^5.8.0"
   }
